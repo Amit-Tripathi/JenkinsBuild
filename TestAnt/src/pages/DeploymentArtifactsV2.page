@@ -1,0 +1,668 @@
+<apex:page showHeader="false" controller="DeploymentArtifactsV2Controller" id="pg" tabStyle="Account">
+<script language="javascript" src="/soap/ajax/19.0/connection.js" type="text/javascript"></script>
+<!--<script type="text/javascript" src="http://jqueryui.com/jquery-1.4.2.js"></script>-->
+
+<apex:includeScript value="{!URLFOR($Resource.DeploymentArtifacts,'/jquery.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.DeploymentArtifacts,'/jquery-ui.min.js')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.DeploymentArtifacts,'jquery-ui.css')}"/>
+<apex:includeScript value="{!URLFOR($Resource.DeploymentArtifacts,'/jquery.bgiframe-2.1.2.js')}"/>
+
+
+  <title>Newly Created artifacts in {!$Label.sndbx} </title>
+ <style>
+  .DateTimeError { color: red; font-weight: strong;}
+  .w600 {
+    width : 600px;
+  }
+  .w20 {
+  width:20px;
+  }
+  .w300 {
+  width:340px;
+  }
+  .w200 {
+  width:200px;
+  padding-left: 5px;
+  }
+  .w150 {
+  width:150px;
+  padding-left: 5px;
+  }
+  .header {
+  background-color: #DCDCDC;
+   padding-left: 5px;
+  }
+ </style> 
+ 
+   
+  <apex:form id="Artifactsform">
+     <apex:pageBlock title="Newly Created artifacts in {!$Label.sndbx}" id="pb">
+            <apex:messages styleClass="DateTimeError" />
+            
+                <apex:pageBlockSection title="Select Date" columns="1">
+                 <apex:pageBlockSectionItem >
+                                <p><b>Last Deployment </b> <input id="datepicker" type="text" value="{!searchdate}"/></p>
+                           </apex:pageBlockSectionItem>
+                            <p><b>Search Based On </b><apex:selectRadio value="{!dateClause}">
+                              <apex:selectOptions value="{!items}"></apex:selectOptions>
+                       </apex:selectRadio></p>
+                       <p><b>Created or Modified By </b><apex:selectRadio value="{!modifiedByClause}">
+                              <apex:selectOptions value="{!ModifiedByitems}"></apex:selectOptions>
+                       </apex:selectRadio></p>
+                       </apex:pageBlockSection>
+                       <apex:outputPanel id="details"> 
+                        <apex:pageBlockSection >            
+                            <input type="button" class="button" onclick="findartifacts();" value="Show Artifacts" id="showArtifacts"/>
+                            <!-- <apex:commandButton action="{!DeploymentArtifactsV2Excel}" value="Export to XML Selected Only"/> -->
+
+                            <input type="button" class="button" value="Export to XML Selected Only" title="Export to XML Selected Only"
+                                                  id="exportListButton" 
+                            onclick="DeploymentArtifactsV2Excel()"/>
+                    </apex:pageBlockSection>
+           <input type = "checkbox" onclick="selectAllChkBox(this)"/><b>Select All</b><br/>
+           <apex:actionStatus id="LoadingData" startText="Loading Data..." stopText="" startStyle="color:red;"/>
+           <div id = "detailBlock" style="display:{!IF(dateClause == null || isValidDate == false, 'none','block')}">
+          <apex:pageBlockSection id="pbsClasses" title="Apex Classes" columns="1">
+                <apex:dataTable value="{!newClasses}" var="wrap" cellpadding="2px">
+                                <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,1);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c1" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                     
+               
+             </apex:dataTable>
+         </apex:pageBlockSection>
+           <apex:pageBlockSection id="pbsPages" title="Apex Pages" columns="4">
+                        <apex:dataTable value="{!newPages}" var="wrap" cellpadding="2px" width="800px">
+                                 <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,2);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c2" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column width="300px">
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column width="300px">
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column width="300px">
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+                     
+             </apex:dataTable>
+         </apex:pageBlockSection>
+          <apex:pageBlockSection id="pbsTriggers" title="Apex Triggers" columns="1">
+                 <apex:dataTable value="{!newTriggers}" var="wrap" cellpadding="2px">
+                                <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,3);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c3" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsComponents" title="Apex Components" columns="1">
+                 <apex:dataTable value="{!newComponents}" var="wrap" cellpadding="2px">
+                    <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,4);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c4" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column>  
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsStaticResources" title="Static Resources" columns="1">
+                 <apex:dataTable value="{!newStaticResources}" var="wrap" cellpadding="2px">
+                    <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,5);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c5" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsWeblinks" title="Weblinks" columns="1">
+                 <apex:dataTable value="{!newWeblinks}" var="wrap" cellpadding="2px">
+                     <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,6);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c6" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsScontrols" title="Scontrols" columns="1">
+                 <apex:dataTable value="{!newScontrols}" var="wrap" cellpadding="2px">
+                    <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,7);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c7" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsDashboards" title="Dashboards" columns="1">
+                 <apex:dataTable value="{!newDashboards}" var="wrap" cellpadding="2px">
+                      <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,8);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c8" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column>  
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.title}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsReports" title="Reports" columns="1">
+                 <apex:dataTable value="{!newReports}" var="wrap" cellpadding="2px">
+                     <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,9);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c9" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsRecordTypes" title="Record Types" columns="1">
+                 <apex:dataTable value="{!newRecordTypes}" var="wrap" cellpadding="2px">
+                      <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,10);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c10" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsProfiles" title="Profiles" columns="1">
+                 <apex:dataTable value="{!newProfiles}" var="wrap" cellpadding="2px">
+                      <apex:column >
+                                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,11);"/></apex:facet>
+                                    <apex:inputCheckbox styleClass="c11" value="{!wrap.isSelected}"></apex:inputCheckbox>
+                                </apex:column> 
+                                  
+                                
+                                <apex:column width="300px">
+                                    <apex:facet name="header">Name</apex:facet>
+                                    <apex:outputLink value="/{!wrap.ac.id}" id="theLink">{!wrap.ac.name}</apex:outputLink>
+                                </apex:column>
+                    <apex:column >
+                    <apex:facet name="header">Created Date</apex:facet>
+                                    <apex:outputText value="{!wrap.ac.createddate}" />
+                   </apex:column>
+                   <apex:column >
+                    <apex:facet name="header">Last Modified Date</apex:facet>
+                             <apex:outputText value="{!wrap.ac.LastModifiedDate}" />
+                     </apex:column>
+                        <apex:column >
+                    <apex:facet name="header">Description</apex:facet>
+                             <apex:outputText value="{!wrap.ac.Description}" />
+                     </apex:column>
+                     
+                     
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+            <apex:pageBlockSection id="pbscstmTab" title="Custom Tabs" columns="1">
+                 <apex:dataTable value="{!listCustomTab}" var="cstmtb" cellpadding="2px">
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,12);"/>Custom Tabs</apex:facet>
+                             <apex:inputCheckbox styleClass="c12" value="{!cstmtb.isSelected}"></apex:inputCheckbox>
+                             <apex:outputText id="clsValue"  value="{!cstmtb.apiName}"></apex:outputText> 
+                     </apex:column>
+                      <!-- apex:column styleClass="w300"> 
+                             <apex:facet name="header"><b>Label</b></apex:facet>
+                              
+                                <apex:outputText value="{!cstmtb.label}"></apex:outputText> 
+                            </apex:column-->
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header">Created Date</apex:facet>
+                             
+                             <apex:outputText value="{!cstmtb.createdDate}"></apex:outputText> 
+                     </apex:column>
+                    <apex:column styleClass="w300">
+                     <apex:facet name="header">Last Modified</apex:facet>
+                             
+                             <apex:outputText value="{!cstmtb.lastModifiedDate}"></apex:outputText> 
+                     </apex:column>
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbscstmLabel" title="Custom Labels" columns="1">
+                 <apex:dataTable value="{!listCustomLabel}" var="lbl" cellpadding="2px">
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,21);"/>Custom Labels</apex:facet>
+                             <apex:inputCheckbox styleClass="c21" value="{!lbl.isSelected}"></apex:inputCheckbox>
+                             <apex:outputText id="clsValue"  value="{!lbl.apiName}"></apex:outputText> 
+                    </apex:column>
+                    <apex:column styleClass="w300">
+                    <apex:facet name="header">Created Date</apex:facet>
+                             
+                             <apex:outputText value="{!lbl.createdDate}"></apex:outputText> 
+                     </apex:column>
+                    <apex:column styleClass="w300">
+                     <apex:facet name="header">Last Modified</apex:facet>
+                             
+                             <apex:outputText value="{!lbl.lastModifiedDate}"></apex:outputText> 
+                     </apex:column>
+                </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:pageBlockSection id="pbsWorkflow" title="Workflows" columns="1">
+                 <apex:dataTable value="{!listWorkflow}" var="wrk" cellpadding="2px">
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,20);"/>Workflows</apex:facet>
+                             <apex:inputCheckbox styleClass="c20" value="{!wrk.isSelected}"></apex:inputCheckbox>
+                             <apex:outputText id="clsValue"  value="{!wrk.apiName}"></apex:outputText> 
+                     </apex:column>
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header">Created Date</apex:facet>
+                             
+                             <apex:outputText value="{!wrk.createdDate}"></apex:outputText> 
+                     </apex:column>
+                    <apex:column styleClass="w300">
+                     <apex:facet name="header">Last Modified</apex:facet>
+                             
+                             <apex:outputText value="{!wrk.lastModifiedDate}"></apex:outputText> 
+                     </apex:column>
+                </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          <apex:actionStatus id="LoadingData1" startText="Getting Custom Fields..." stopText="" startStyle="color:red;"/>
+          <apex:pageBlockSection id="pbscstmObject" title="Custom Objects" columns="1">
+                 <apex:dataTable styleClass="cstm" value="{!listCstmObj}" var="cstmObj" cellpadding="2px">
+                     <apex:column >
+                    <apex:facet name="header">Custom Objects</apex:facet>
+                             <apex:inputCheckbox id="cls" value="{!cstmObj.isSelected}" onclick="SelectAll(this,{!cstmObj.index})"/>
+                             <b><apex:outputText id="clsValue"  value="{!cstmObj.apiName}"></apex:outputText></b>
+                    <div>
+                    <br/>
+                    <table border="1">
+                        <tr>
+                         <th class="header"></th>
+                         <th class="header">Custom Field</th>
+                         <th class="header">Created Date</th>
+                         <th class="header">Last Modified Date</th>
+                        </tr>
+                        <apex:repeat value="{!cstmObj.wrapList}" var="cstmfld">
+                          
+                            <tr>
+                            <td Class="w20"><apex:inputCheckbox styleClass="c{!cstmObj.index}" value="{!cstmfld.isSelected}"/>
+                            </td>
+                            
+                      <td class="w150">
+                             
+                                
+                                <apex:outputText value="{!cstmfld.apiName}"></apex:outputText> 
+                            </td>
+                            
+                          
+                            <td Class="w200">
+                            
+                             
+                             <apex:outputText value="{!cstmfld.createdDate}"></apex:outputText>
+                    
+                    </td>
+                    <td Class="w200">
+                             <apex:outputText value="{!cstmfld.lastModifiedDate}"></apex:outputText>
+                    
+                    </td>
+                    </tr></apex:repeat>
+                        </Table>
+                        <div style="display:{!IF(cstmObj.isLayoutExist,'inline','none')}">
+                        <br/>
+                        <Table border="1" cellpadding="2px">
+                        <tr>
+                         <th class="header"></th>
+                         <th class="header">Layout</th>
+                         <th class="header">Created Date</th>
+                         <th class="header">Last Modified Date</th>
+                        </tr>
+                        <apex:repeat value="{!cstmObj.listLayouts}" var="lyout" >
+                            <tr>
+                                <td Class="w20">
+                                    <apex:inputCheckbox styleClass="c{!cstmObj.index}" value="{!lyout.isSelected}"/>
+                                </td>
+                                <td Class="w150"> 
+                                   <apex:outputText value="{!lyout.apiName}"></apex:outputText> 
+                                </td>
+                                <td Class="w200"> 
+                                   <apex:outputText value="{!lyout.createdDate}"></apex:outputText> 
+                                </td>
+                                <td Class="w200"> 
+                                    <apex:outputText value="{!lyout.lastModifiedDate}"></apex:outputText> 
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                      </Table> <br/> 
+                        
+                 </div>
+              </div>
+       
+           </apex:column>
+                    
+           <apex:column >
+               <apex:facet name="header">Created Date</apex:facet>
+               <apex:outputText value="{!cstmObj.createdDate}"></apex:outputText>
+           </apex:column>
+           <apex:column >
+             <apex:facet name="header">Last Modified Date</apex:facet>
+             <apex:outputText value="{!cstmObj.lastModifiedDate}"></apex:outputText>
+           </apex:column>
+                     
+                     
+             </apex:dataTable>
+          </apex:pageBlockSection> 
+         <apex:actionStatus id="LoadingData2" startText="Getting Custom Fields..." stopText="" startStyle="color:red;"/>
+         <apex:pageBlockSection id="pbsstdObj" title="Standard Objects" columns="1">
+                 <apex:dataTable styleClass="std" value="{!listStandardObj}" var="stdobj" cellpadding="2px">
+                     <apex:column >
+                    <apex:facet name="header">Standard Objects</apex:facet>
+                             <apex:inputCheckbox id="cls" value="{!stdobj.isSelected}" onclick="SelectAll(this,{!stdobj.index})"></apex:inputCheckbox>
+                           <b>  <apex:outputText id="clsValue"  value="{!stdobj.apiName}"></apex:outputText></b> 
+                       <br/>
+
+                       <div>
+                        <br/>
+                        <Table cellpadding="2px" border="1">
+                        <tr>
+                         <th class="header"></th>
+                         <th class="header">Custom Field</th>
+                         <th class="header">Created Date</th>
+                         <th class="header">Last Modified Date</th>
+                        </tr>
+                            <apex:repeat value="{!stdobj.wrapList}" var="cstmfld" >
+                              <tr>  
+                            <td Class="w20">
+                                <apex:inputCheckbox styleClass="c{!stdobj.index}" value="{!cstmfld.isSelected}"/>
+                            </td>
+                            <td class="w150"> 
+                                <apex:outputText value="{!cstmfld.apiName}"></apex:outputText> 
+                            </td>
+                            <td class="w200">
+                             <apex:outputText value="{!cstmfld.createdDate}"></apex:outputText>
+                    </td>
+                    <td class="w200">
+                            <apex:outputText value="{!cstmfld.lastModifiedDate}"></apex:outputText>
+                    </td></tr></apex:repeat>
+                        </Table><br/>
+                        <div style="display:{!IF(stdobj.isLayoutExist,'inline','none')}">
+                        <Table cellpadding="2px" border="1">
+                         <tr>
+                         <th class="header"></th>
+                         <th class="header">Layout</th>
+                         <th class="header">Created Date</th>
+                         <th class="header">Last Modified Date</th>
+                        </tr>
+                        <apex:repeat value="{!stdobj.listLayouts}" var="lyout" >
+                            <tr>
+                            <td Class="w20">
+                            </td>
+                            <td class="w150"> 
+                               <apex:outputText value="{!lyout.apiName}"></apex:outputText> 
+                            </td></tr></apex:repeat>
+                        </Table><br/>
+                        </div>
+                    </div> 
+       
+                     </apex:column>
+                     
+             </apex:dataTable>
+          </apex:pageBlockSection>
+          
+          
+           <apex:pageBlockSection id="pbsAnalyticSnapshot" title="Analytic Snapshot" columns="1">
+                 <apex:dataTable value="{!listAnalyticSnapshot}" var="as" cellpadding="2px">
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,90);"/>Name</apex:facet>
+                             <apex:inputCheckbox styleClass="c90" value="{!as.isSelected}"></apex:inputCheckbox>
+                             <apex:outputText id="clsValue"  value="{!as.apiName}"></apex:outputText> 
+                     </apex:column>
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header">Created Date</apex:facet>
+                             
+                             <apex:outputText value="{!as.createdDate}"></apex:outputText> 
+                     </apex:column>
+                    <apex:column styleClass="w300">
+                     <apex:facet name="header">Last Modified</apex:facet>
+                             
+                             <apex:outputText value="{!as.lastModifiedDate}"></apex:outputText> 
+                     </apex:column>
+                </apex:dataTable>
+          </apex:pageBlockSection> 
+          
+            <apex:pageBlockSection id="pbsReportType" title="Report Type" columns="1">
+                 <apex:dataTable value="{!listReportType}" var="rt" cellpadding="2px">
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header"><input type = "checkbox" id = "cls" onclick="SelectAll(this,91);"/>Name</apex:facet>
+                             <apex:inputCheckbox styleClass="c91" value="{!rt.isSelected}"></apex:inputCheckbox>
+                             <apex:outputText id="clsValue"  value="{!rt.apiName}"></apex:outputText> 
+                     </apex:column>
+                     <apex:column styleClass="w300">
+                    <apex:facet name="header">Created Date</apex:facet>
+                             
+                             <apex:outputText value="{!rt.createdDate}"></apex:outputText> 
+                     </apex:column>
+                    <apex:column styleClass="w300">
+                     <apex:facet name="header">Last Modified</apex:facet> 
+                             
+                             <apex:outputText value="{!rt.lastModifiedDate}"></apex:outputText> 
+                     </apex:column>
+                </apex:dataTable>
+          </apex:pageBlockSection> 
+          </div></apex:outputPanel>
+          <script>
+          
+var j$ = jQuery.noConflict();
+
+            j$(function() {
+                    j$( "#datepicker" ).datepicker();
+                    });
+        
+        function selectAllChkBox(fieldid) {
+         j$(":checkbox").attr('checked', fieldid.checked);
+          }
+         
+          
+              
+        function findartifacts(){
+               
+                if(j$('#datepicker').val() != ''){
+                        //alert($('#datepicker').datepicker( "getDate" ));
+                        var adate = j$('#datepicker').datepicker("getDate");
+                        //alert($('#datepicker').val());
+                        j$(":checkbox").attr('disabled', true);
+                        showartifacts(j$('#datepicker').val());
+                }else{
+                            alert('Please select a date.');
+                }
+            }
+        function SelectAll(elemChkAll,index){
+               // var elms =  $("[name='chkRestore']");
+               var elms =  j$('.c' + index + ':checkbox');
+                //  alert(index);            
+                if(elms.length > 0){
+                  elms.each(function(){
+                       this.checked= elemChkAll.checked;
+                                                
+                      });
+                    
+                  }
+             }
+        
+</script>
+      </apex:pageBlock>
+
+        <apex:actionFunction name="showartifacts"  action="{!showArtifacts}" rerender="pb" status="LoadingData">
+            <apex:param assignTo="{!searchdate}" value="" name="searchdate" />
+        </apex:actionFunction>
+         <apex:actionFunction name="fetchXMLAF"  action="{!fetchXML}" rerender="pg"> 
+         </apex:actionFunction> 
+             <apex:actionFunction name="DeploymentArtifactsV2Excel"  action="{!DeploymentArtifactsV2Excel}"> 
+         </apex:actionFunction>    
+       
+          
+    
+        
+ </apex:form>
+</apex:page>

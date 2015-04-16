@@ -1,0 +1,82 @@
+<apex:page showHeader="false" controller="DeploymentArtifactsController" tabStyle="Account">
+<apex:includeScript value="{!URLFOR($Resource.DeploymentArtifacts,'/jquery.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.DeploymentArtifacts,'/jquery-ui.min.js')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.DeploymentArtifacts,'jquery-ui.css')}"/>
+<apex:includeScript value="{!URLFOR($Resource.DeploymentArtifacts,'/jquery.bgiframe-2.1.2.js')}"/>
+<!-- Testing the Page -->
+  
+  <title>Newly Created artifacts in {!$Label.sndbx} </title>
+ <style>
+  .DateTimeError { color: red; font-weight: strong;}
+ </style>
+  
+  <apex:form id="Artifactsform">
+     <apex:pageBlock title="Newly Created artifacts in {!$Label.sndbx}" id="Artifactspage">         
+     		<apex:messages styleClass="DateTimeError" />
+       			<apex:pageBlockSection title="Select Date" columns="2">
+            	 <apex:pageBlockSectionItem >
+						    	<p><b>Last Deployment </b> <input id="datepicker" type="text" value="{!searchdate}"/></p>
+						   </apex:pageBlockSectionItem>
+			  			<apex:pageBlockSectionItem >		    
+						    <apex:commandButton onclick="findartifacts();return false;" value="Show Artifacts" id="showArtifacts"/>
+						    <apex:actionStatus id="statusLoading" startText="Fetching..." stopText="" startStyle="color:red;" />     
+			        </apex:pageBlockSectionItem>
+           </apex:pageBlockSection>
+        
+          <apex:pageBlockSection id="pbsClasses" title="Apex Classes" columns="1">
+		        <apex:dataTable value="{!newClasses}" var="newcls" cellpadding="2px">
+								<apex:column width="300px">
+			 						<apex:facet name="header">Name</apex:facet>
+			 						<apex:outputLink value="/{!newcls.id}" id="theLink">{!newcls.name}</apex:outputLink>
+								</apex:column>
+             		<apex:column >
+              		<apex:facet name="header">Created Date</apex:facet>
+									<apex:outputText value="{!newcls.createddate}" />
+								</apex:column>
+        		</apex:dataTable>
+         </apex:pageBlockSection>
+           <apex:pageBlockSection id="pbsPages" title="Apex Pages" columns="1">
+		     			<apex:dataTable value="{!newPages}" var="newpg" cellpadding="2">
+	            		<apex:column width="300px">
+				 						<apex:facet name="header">Name</apex:facet>
+				 						<apex:outputLink value="/apex/{!newpg.name}" id="theLink">{!newpg.name}</apex:outputLink>
+									</apex:column>
+	           			<apex:column width="200px">
+	              		<apex:facet name="header">Created Date</apex:facet>
+										<apex:outputText value="{!newpg.createddate}" />
+									</apex:column>
+									<apex:column >
+	              		<apex:facet name="header">Description</apex:facet>
+										<apex:outputText value="{!newpg.Description}" />
+									</apex:column>
+             </apex:dataTable>
+         </apex:pageBlockSection>
+         
+         <script>
+         // Script.
+var j$ = jQuery.noConflict();
+
+			j$(function() {
+					j$( "#datepicker" ).datepicker();
+					});
+			
+		function findartifacts(){
+				if(j$('#datepicker').val() != ''){
+			 			//alert($('#datepicker').datepicker( "getDate" ));
+			 			var adate = j$('#datepicker').datepicker("getDate");
+			 			//alert($('#datepicker').val());
+			 			showartifacts(j$('#datepicker').val());
+		 		}else{
+		 					alert('Please select a date.');
+		 }
+		}
+</script>
+
+      </apex:pageBlock>
+
+   		<apex:actionFunction name="showartifacts"  action="{!showArtifacts}" rerender="Artifactspage" status="statusLoading">
+    		<apex:param assignTo="{!searchdate}" value="" name="searchdate" />
+    	</apex:actionFunction>
+    	  
+ </apex:form>
+</apex:page>

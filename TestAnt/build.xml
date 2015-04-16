@@ -1,0 +1,213 @@
+<!--<project name="ci/gps-salesforce" default="train-build-quick" basedir="." xmlns:sf="antlib:com.salesforce">
+
+    <property file="build.properties"/>
+    <property environment="env"/>
+
+    <taskdef resource="com/salesforce/antlib.xml" uri="antlib:com.salesforce">
+        <classpath>
+            <pathelement location="ant-salesforce.jar" />
+        </classpath>
+    </taskdef>
+
+    <target name="train-build-quick" depends="proxy">
+      <sf:deploy username="${sf.username}" password="${sf.password}" serverurl="${sf.serverurl}" maxPoll="${sf.maxPoll}" deployRoot="src" rollbackOnError="true" runAllTests="false" logType="Debugonly" checkOnly="true"/>
+    </target>
+	
+	<target name="proxy">
+		<property name="proxy.host" value="proxy-app.ms.com" />
+		<property name="proxy.port" value="8080" />
+		<property name="proxy.user" value="" />
+		<property name="proxy.pwd" value="" />
+		<setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.pwd}" />
+	</target>   
+</project>-->
+
+<project name="ci/gps-salesforce" default="train-build-quick" basedir="." xmlns:sf="antlib:com.salesforce">
+
+    <property file="build.properties"/>
+    <property environment="env"/>
+
+    <taskdef resource="com/salesforce/antlib.xml" uri="antlib:com.salesforce">
+        <classpath>
+            <pathelement location="ant-salesforce.jar" />
+        </classpath>
+    </taskdef>
+	
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+	  <classpath>
+	    <pathelement location="ant-contrib-0.3.jar"/>
+	  </classpath>
+	</taskdef>
+	
+	<target name="proxy">
+		<property name="proxy.host" value="proxy-app.ms.com" />
+		<property name="proxy.port" value="8080" />
+		<property name="proxy.user" value="" />
+		<property name="proxy.pwd" value="" />
+		<setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.pwd}" />
+	</target>
+	
+	<target name="train-build-quick" depends="proxy">		
+		<mkdir dir="buildSet"/>
+		
+		<delete includeemptydirs="true">			
+			<fileset dir="buildSet" includes="**/*"/>			
+		</delete>
+		
+		<!--Iterate over SRC directory and copy modified files to buildSet folder-->
+		<foreach target="createWorkspace" param="dir.name" inheritall="true">			
+			<path>
+				<dirset dir="src">					
+				</dirset>	
+			</path>	
+		</foreach>
+		
+		<checkdir dir="buildset"/>
+		<echo message="value of property=${dir.contains-files}"/>
+		<!--Iterate over new build files directory take the name of the files. 
+		Find respective Meta xml files from SRC folder and copy it to buildSet folder-->
+		<condition property="dir.contains-files" else="false">
+			<isset property="dir.contains-files"/>
+		</condition>
+		<if>
+			<equals arg1="${dir.contains-files}" arg2="false" />
+			<then>
+				<echo message="Directory is empty"/>
+			</then>
+			<else>
+				<foreach target="getUpdatedFiles" param="builFilePath">
+					<path>
+						<fileset dir="buildset">
+						<exclude name="**/*.xml"/>
+						</fileset>
+					</path>
+					
+					 
+				  </foreach>
+				<!--Copy package.xml file to buildset folder every time-->
+				<copyPackageXML destinationDir="buildset" sourceDir="src"/>
+				
+				<sf:deploy username="${sf.username}" password="${sf.password}" serverurl="${sf.serverurl}" maxPoll="${sf.maxPoll}" deployRoot="buildSet" rollbackOnError="true" runAllTests="false" logType="Debugonly" checkOnly="true"/>
+			</else>
+		</if>
+		
+
+		
+		
+
+	</target>
+	
+	<!--Micro to copy modfied files from source to destination-->
+	<macrodef name="copyModifiedfiles">
+		<attribute name="sourceDir"/>
+		<attribute name="destinationDir"/>
+		
+		<sequential>			
+			<copy todir="@{destinationDir}" overwrite="true" verbose="true">
+				<fileset dir="@{sourceDir}">
+					<modified>
+						<param name="cache.cachefile" value="cache.properties"/>
+					</modified>					
+				</fileset>				
+			</copy>
+		</sequential>
+	</macrodef>
+	
+	<!--Micro to copy meta xml files from source to destination-->
+	<macrodef name="copyMetaXMLFiles">
+		<attribute name="sourceDir"/>
+		<attribute name="destinationDir"/>
+		
+		<sequential>
+			<copy todir="@{destinationDir}" flatten="true">
+			    <resources>
+			      <file file="@{sourceDir}"/>
+			    </resources>
+			  </copy>
+		</sequential>
+	</macrodef>
+	
+	<!--Micro to copy Package.xml file from source to destination-->
+	<macrodef name="copyPackageXML">
+		<attribute name="sourceDir"/>
+		<attribute name="destinationDir"/>
+		
+		<sequential>
+			<copy todir="@{destinationDir}" flatten="true">
+			    <resources>
+			      <file file="@{sourceDir}/package.xml"/>
+			    </resources>
+			  </copy>
+		</sequential>
+	</macrodef>
+	
+	<!--Micro to Replace String-->
+	<macrodef name="replaceString">
+        <attribute name="property.to.process" default="default" />
+        <attribute name="output.property" default="default" />
+		<attribute name="existingPattern" default="default" />
+        <attribute name="replaceString" default="default" />
+		
+        <sequential>
+            <echo message="@{property.to.process}" file="some.tmp.file" />
+            <loadfile property="@{output.property}" srcFile="some.tmp.file">
+                <filterchain>
+                    <tokenfilter>
+                        <replaceregex pattern="@{existingPattern}" replace="@{replaceString}" flags="g" />
+                    </tokenfilter>
+                </filterchain>
+            </loadfile>
+            <delete file="some.tmp.file" />
+        </sequential>
+    </macrodef>
+	
+	<target name="createWorkspace">
+		<echo message="createWorkspace = ${dir.name}"/>
+		<available file="cache.properties"  property="cache.file.found"/>
+		<echo message="Cach file : ${cache.file.found}"/>
+		
+		<!--Do not create build files for 1st Run-->
+	    <if>
+	        <equals arg1="${cache.file.found}" arg2="true" />
+	        <then>
+	        	<copyModifiedfiles destinationDir="buildset" sourceDir="${dir.name}"/>
+	        </then>
+	    	<else>
+	    		<copyModifiedfiles destinationDir="${dir.name}" sourceDir="${dir.name}"/>
+	    	</else>
+	    </if>
+		
+	</target> 
+	
+	<target name="getUpdatedFiles" description="Get the path of modified files from buildSet folder" >
+		<echo message="Updated file 1 : ${builFilePath}"/>
+		<basename property="filename" file="${builFilePath}"/>
+		<echo message="file=${filename}"/>
+		<!--Update the path for meta xml files-->
+		<replaceString property.to.process="${builFilePath}" output.property="metaXMLFilePath" existingPattern="buildset" replaceString="src" />		 
+		<echo message="Updated file 2 : ${builFilePath}"/>
+		<echo message="metaXMLFile = ${metaXMLFilePath}" />
+		
+		<replaceString property.to.process="${builFilePath}" output.property="buildFileFolder" existingPattern="${filename}" replaceString="" />		 
+	    <echo message="buildFileFolder = ${buildFileFolder}" />
+				
+		<copyMetaXMLFiles destinationDir="${buildFileFolder}" sourceDir="${metaXMLFilePath}-meta.xml" />
+		
+	</target>
+	
+	
+	<!--<target name="checkdir">
+	  <fileset dir="buildset" id="fileset"/>
+	  <pathconvert refid="fileset" property="dir.contains-files" setonempty="false"/>
+	</target>-->
+	<macrodef name="checkdir">
+		<attribute name="dir" default="default" />
+		<sequential>
+			  <fileset dir="buildset" id="fileset"/>
+			  <pathconvert refid="fileset" property="dir.contains-files" setonempty="false"/>
+		</sequential>
+		
+	</macrodef>
+
+</project>
+
